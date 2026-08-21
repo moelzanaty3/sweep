@@ -25,6 +25,9 @@ jobs:
       - name: Build (debug, warnings are failures)
         run: swift build -Xswiftc -warnings-as-errors
 
+      - name: Test
+        run: swift test
+
       - name: Assemble the app bundle
         run: bash build.sh
 

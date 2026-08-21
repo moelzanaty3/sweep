@@ -9,6 +9,12 @@ let package = Package(
             name: "MacCleaner",
             path: "Sources/MacCleaner",
             swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .testTarget(
+            name: "MacCleanerTests",
+            dependencies: ["MacCleaner"],
+            path: "Tests/MacCleanerTests",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]
 )
