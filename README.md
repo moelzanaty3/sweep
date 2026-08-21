@@ -10,7 +10,9 @@ Requires macOS 14+.
 
 ## Install
 
-Build from source. Sweep is a developer tool and you have the toolchain:
+### From source (recommended)
+
+Sweep is a developer tool and you already have the toolchain:
 
 ```
 git clone https://github.com/moelzanaty3/sweep.git
@@ -18,9 +20,24 @@ cd sweep
 bash build.sh install
 ```
 
-That builds a release binary, generates the icon, assembles `Sweep.app`, and copies it to `/Applications`. Drop `install` to leave it in `dist/`.
+That builds a release binary, generates the icon, assembles `Sweep.app` and copies it to `/Applications`. Drop `install` to leave it in `dist/`.
 
-A locally built app never carries the quarantine attribute, so Gatekeeper stays out of your way.
+A locally built app never carries the quarantine attribute, so Gatekeeper stays out of your way — and you get to read what you are about to run. For an app that deletes files, that is the point.
+
+### Homebrew
+
+```
+brew tap moelzanaty3/tap
+brew install --cask --no-quarantine sweep
+```
+
+`--no-quarantine` is required for now, and you should know why before you type it: Sweep is not yet notarized by Apple, so macOS would otherwise refuse to open it. The flag tells Homebrew to skip attaching the quarantine flag to the download.
+
+That is a real trade-off, not a formality — you are choosing to run an app Apple has not vetted. If that bothers you, build from source instead. Once the app is notarized the flag goes away and this becomes a plain `brew install --cask sweep`.
+
+### Direct download
+
+Grab the `.dmg` from [Releases](https://github.com/moelzanaty3/sweep/releases). Checksums are attached to every release. The same notarization caveat applies — right-click the app and choose **Open** the first time.
 
 ## What it scans
 
@@ -119,6 +136,10 @@ Swift 6 toolchain, SwiftPM, no dependencies.
 [GitHub](https://github.com/moelzanaty3) · [LinkedIn](https://www.linkedin.com/in/moelzanaty3/)
 
 Built because developer machines deserve better than `rm -rf` and guesswork.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Most contributions are new cache locations, and the guide covers what a good entry needs — a risk tier chosen conservatively, and a rationale written for someone who does not know the tool.
 
 ## License
 
