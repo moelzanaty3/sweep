@@ -10,20 +10,6 @@ Requires macOS 14+.
 
 ## Install
 
-### From source (recommended)
-
-Sweep is a developer tool and you already have the toolchain:
-
-```
-git clone https://github.com/moelzanaty3/sweep.git
-cd sweep
-bash build.sh install
-```
-
-That builds a release binary, generates the icon, assembles `Sweep.app` and copies it to `/Applications`. Drop `install` to leave it in `dist/`.
-
-A locally built app never carries the quarantine attribute, so Gatekeeper stays out of your way — and you get to read what you are about to run. For an app that deletes files, that is the point.
-
 ### Homebrew
 
 ```
@@ -31,13 +17,23 @@ brew tap moelzanaty3/tap
 brew install --cask --no-quarantine sweep
 ```
 
-`--no-quarantine` is required for now, and you should know why before you type it: Sweep is not yet notarized by Apple, so macOS would otherwise refuse to open it. The flag tells Homebrew to skip attaching the quarantine flag to the download.
+`--no-quarantine` is needed because Sweep is not notarized by Apple yet — without it macOS refuses to open the app. It becomes a plain `brew install --cask sweep` once notarized.
 
-That is a real trade-off, not a formality — you are choosing to run an app Apple has not vetted. If that bothers you, build from source instead. Once the app is notarized the flag goes away and this becomes a plain `brew install --cask sweep`.
+### From source
+
+No toolchain surprises, and you get to read what you are about to run:
+
+```
+git clone https://github.com/moelzanaty3/sweep.git
+cd sweep
+bash build.sh install
+```
+
+That builds a release binary, generates the icon, assembles `Sweep.app` and copies it to `/Applications`. Drop `install` to leave it in `dist/`. A locally built app carries no quarantine attribute, so Gatekeeper stays out of the way entirely.
 
 ### Direct download
 
-Grab the `.dmg` from [Releases](https://github.com/moelzanaty3/sweep/releases). Checksums are attached to every release. The same notarization caveat applies — right-click the app and choose **Open** the first time.
+Grab the `.dmg` from [Releases](https://github.com/moelzanaty3/sweep/releases) — checksums are attached to every one. Right-click the app and choose **Open** the first time, for the same notarization reason.
 
 ## What it scans
 
