@@ -82,7 +82,7 @@ final class AppState: ObservableObject {
     @Published var projectRoots: [String] { didSet { store(projectRoots.joined(separator: "\n"), "projectRoots") } }
     @Published var fileRoots: [String] { didSet { store(fileRoots.joined(separator: "\n"), "fileRoots") } }
     /// Path prefixes that never surface in Projects, Git, Large Files or Duplicates.
-    @Published var whitelist: [String] { didSet { store(whitelist.joined(separator: "\n"), "whitelist") } }
+    @Published var allowlist: [String] { didSet { store(allowlist.joined(separator: "\n"), "allowlist") } }
     @Published var minimumFileMB: Int { didSet { store(minimumFileMB, "minimumFileMB") } }
     @Published var olderThanDays: Int { didSet { store(olderThanDays, "olderThanDays") } }
     @Published var duplicateMinimumMB: Int { didSet { store(duplicateMinimumMB, "duplicateMinimumMB") } }
@@ -130,7 +130,11 @@ final class AppState: ObservableObject {
         let storedFiles = Self.decode(defaults.string(forKey: "fileRoots"))
         projectRoots = storedProjects.isEmpty ? Catalog.defaultScanRoots : storedProjects
         fileRoots = storedFiles.isEmpty ? Catalog.defaultFileRoots : storedFiles
-        whitelist = Self.decode(defaults.string(forKey: "whitelist"))
+        // The key was renamed from "whitelist"; read the old one once so an
+        // existing install does not silently lose its exclusions.
+        let storedAllowlist = Self.decode(defaults.string(forKey: "allowlist"))
+        let legacyAllowlist = Self.decode(defaults.string(forKey: "whitelist"))
+        allowlist = storedAllowlist.isEmpty ? legacyAllowlist : storedAllowlist
 
         didLoad = true
         rescheduleTimer()
@@ -204,29 +208,29 @@ final class AppState: ObservableObject {
         if hasSelection { clearSelection() } else { selectSafeDefaults() }
     }
 
-    // MARK: - Whitelist
+    // MARK: - Allowlist
 
-    func addToWhitelist(_ item: CleanItem) {
+    func addToAllowlist(_ item: CleanItem) {
         guard let path = item.paths.first else { return }
         let project = item.category == .projects
             ? (path as NSString).deletingLastPathComponent
             : path
-        guard !whitelist.contains(project) else { return }
-        whitelist = (whitelist + [project]).sorted()
+        guard !allowlist.contains(project) else { return }
+        allowlist = (allowlist + [project]).sorted()
         selection.remove(item.id)
         for category in Category.allCases {
             itemsByCategory[category]?.removeAll { $0.paths.first?.hasPrefix(project) == true }
         }
-        log("Whitelisted \(DiskScanner.abbreviate(project))")
+        log("Added \(DiskScanner.abbreviate(project)) to the allowlist")
     }
 
-    func removeFromWhitelist(_ path: String) {
-        whitelist = whitelist.filter { $0 != path }
+    func removeFromAllowlist(_ path: String) {
+        allowlist = allowlist.filter { $0 != path }
     }
 
-    func addWhitelistFolder() {
+    func addAllowlistFolder() {
         guard let picked = pickFolders() else { return }
-        whitelist = Array(Set(whitelist + picked)).sorted()
+        allowlist = Array(Set(allowlist + picked)).sorted()
     }
 
     // MARK: - Scanning
@@ -248,7 +252,7 @@ final class AppState: ObservableObject {
 
         let projectRoots = self.projectRoots
         let fileRoots = self.fileRoots
-        let blocked = Set(self.whitelist)
+        let blocked = Set(self.allowlist)
         let minimumMB = self.minimumFileMB
         let duplicateMB = self.duplicateMinimumMB
         let ageFilter = self.olderThanDays > 0 ? self.olderThanDays : nil
@@ -271,7 +275,7 @@ final class AppState: ObservableObject {
             case .largeFiles:
                 found = await DiskScanner.scanFiles(roots: fileRoots, minimumMB: minimumMB, olderThanDays: ageFilter)
             case .duplicates:
-                found = await DuplicateScanner.scan(roots: fileRoots, minimumMB: duplicateMB, whitelist: blocked)
+                found = await DuplicateScanner.scan(roots: fileRoots, minimumMB: duplicateMB, allowlist: blocked)
             }
 
             if !blocked.isEmpty {

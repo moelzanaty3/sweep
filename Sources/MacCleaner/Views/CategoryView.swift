@@ -24,7 +24,7 @@ struct CategoryView: View {
                                 fraction: Double(item.bytes) / Double(max(1, largest)),
                                 toggle: { state.toggle(item) },
                                 reveal: { state.reveal(item) },
-                                whitelist: { state.addToWhitelist(item) }
+                                allowlist: { state.addToAllowlist(item) }
                             )
                         }
                     }

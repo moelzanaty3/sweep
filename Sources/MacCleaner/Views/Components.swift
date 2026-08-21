@@ -8,7 +8,7 @@ struct ItemRow: View {
     let fraction: Double
     let toggle: () -> Void
     let reveal: () -> Void
-    let whitelist: () -> Void
+    let allowlist: () -> Void
 
     @State private var hovering = false
     @State private var showingWhy = false
@@ -108,7 +108,7 @@ struct ItemRow: View {
         .contextMenu {
             Button("Reveal in Finder", action: reveal).disabled(item.paths.isEmpty)
             if !item.paths.isEmpty {
-                Button("Never show this again", action: whitelist)
+                Button("Never show this again", action: allowlist)
             }
         }
         .animation(.easeOut(duration: 0.12), value: hovering)

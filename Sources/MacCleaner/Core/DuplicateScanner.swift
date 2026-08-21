@@ -4,7 +4,7 @@ import Foundation
 enum DuplicateScanner {
     /// Three passes, cheapest first: group by size, then by a 64 KB head digest, then by a full
     /// digest. Only the survivors of each pass pay for the next one.
-    static func scan(roots: [String], minimumMB: Int, whitelist: Set<String>) async -> [CleanItem] {
+    static func scan(roots: [String], minimumMB: Int, allowlist: Set<String>) async -> [CleanItem] {
         let existingRoots = roots.filter { FileManager.default.fileExists(atPath: $0) }
         guard !existingRoots.isEmpty else { return [] }
 
@@ -33,7 +33,7 @@ enum DuplicateScanner {
                   let bytes = Int64(fields[0]),
                   let epoch = TimeInterval(fields[1]) else { continue }
             let path = String(fields[2])
-            guard !whitelist.contains(where: { path.hasPrefix($0) }) else { continue }
+            guard !allowlist.contains(where: { path.hasPrefix($0) }) else { continue }
             bySize[bytes, default: []].append(Entry(path: path, bytes: bytes, modified: Date(timeIntervalSince1970: epoch)))
         }
 
@@ -63,12 +63,12 @@ enum DuplicateScanner {
             let ordered = group.sorted { $0.modified > $1.modified }
             let short = String(digest.prefix(7))
             for (index, entry) in ordered.enumerated() {
+                let folder = DiskScanner.abbreviate((entry.path as NSString).deletingLastPathComponent)
+                let position = index == 0 ? "newest of \(ordered.count) copies" : "copy \(index + 1) of \(ordered.count)"
                 items.append(CleanItem(
                     id: "dup:\(entry.path)",
                     title: (entry.path as NSString).lastPathComponent,
-                    detail: index == 0
-                        ? "newest of \(ordered.count) copies · set \(short) · \(DiskScanner.abbreviate((entry.path as NSString).deletingLastPathComponent))"
-                        : "copy \(index + 1) of \(ordered.count) · set \(short) · \(DiskScanner.abbreviate((entry.path as NSString).deletingLastPathComponent))",
+                    detail: "\(position) · set \(short) · \(folder)",
                     paths: [entry.path],
                     risk: .protected,
                     category: .duplicates,

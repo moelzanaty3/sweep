@@ -29,7 +29,7 @@ enum CLI {
                                                              minimumMB: 200, olderThanDays: nil))
                 grandTotal += report(Category.duplicates,
                                      await DuplicateScanner.scan(roots: Catalog.defaultFileRoots,
-                                                                 minimumMB: 50, whitelist: []))
+                                                                 minimumMB: 50, allowlist: []))
             } else {
                 print("(pass --all to also walk projects, git repos and large files)\n")
             }

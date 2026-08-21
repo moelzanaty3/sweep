@@ -13,7 +13,7 @@ struct SettingsView: View {
                     appearanceCard
                     menuBar
                     schedule
-                    whitelist
+                    allowlist
                     thresholds
                     safety
                 }
@@ -171,24 +171,24 @@ struct SettingsView: View {
         .controlSize(.small)
     }
 
-    // MARK: - Whitelist
+    // MARK: - Allowlist
 
-    private var whitelist: some View {
+    private var allowlist: some View {
         settingsCard(title: "Never touch these", icon: "hand.raised.fill", tint: Risk.safe.tint) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Whitelisted paths are skipped by Projects, Git, Large Files and Duplicates. Right-click any row to add it here.")
+                Text("Allowlisted paths are skipped by Projects, Git, Large Files and Duplicates. Right-click any row to add it here.")
                     .uiFont(12)
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if state.whitelist.isEmpty {
-                    Text("Nothing whitelisted yet.")
+                if state.allowlist.isEmpty {
+                    Text("Nothing on the allowlist yet.")
                         .uiFont(12, design: .monospaced)
                         .foregroundStyle(Theme.textTertiary)
                         .padding(.vertical, 6)
                 } else {
                     VStack(spacing: 4) {
-                        ForEach(state.whitelist, id: \.self) { path in
+                        ForEach(state.allowlist, id: \.self) { path in
                             HStack(spacing: 8) {
                                 Image(systemName: "hand.raised.fill")
                                     .uiFont(11)
@@ -200,7 +200,7 @@ struct SettingsView: View {
                                     .truncationMode(.middle)
                                 Spacer()
                                 Button {
-                                    state.removeFromWhitelist(path)
+                                    state.removeFromAllowlist(path)
                                 } label: {
                                     Image(systemName: "xmark.circle.fill")
                                         .uiFont(12)
@@ -216,7 +216,7 @@ struct SettingsView: View {
                 }
 
                 Button {
-                    state.addWhitelistFolder()
+                    state.addAllowlistFolder()
                 } label: {
                     Label("Add folder", systemImage: "plus")
                 }
@@ -279,7 +279,8 @@ struct SettingsView: View {
                     }
                 }
                 Divider().overlay(Theme.stroke).padding(.vertical, 3)
-                Text("Deletion is refused outside your home folder, and for SSH keys, GnuPG, Keychains, Preferences and iCloud Drive regardless of what is selected.")
+                Text("Deletion is refused outside your home folder, and for SSH keys, GnuPG, Keychains, "
+                     + "Preferences and iCloud Drive regardless of what is selected.")
                     .uiFont(12)
                     .foregroundStyle(Theme.textTertiary)
                     .fixedSize(horizontal: false, vertical: true)
