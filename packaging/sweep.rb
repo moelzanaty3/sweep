@@ -13,14 +13,18 @@ cask "sweep" do
 
   app "Sweep.app"
 
-  # Until the app is notarized, installing needs --no-quarantine.
+  # Homebrew 6 removed --no-quarantine, so the cask cannot opt out and the
+  # download arrives quarantined. Until the app is notarized, clearing the
+  # attribute by hand is the only reliable route.
   caveats <<~CAVEATS
-    Sweep is not yet notarized by Apple. If macOS refuses to open it, either
-    reinstall with:
+    Sweep is not notarized by Apple yet, so macOS will refuse to open it.
 
-      brew install --cask --no-quarantine sweep
+    To allow it:
 
-    or right-click the app and choose Open the first time.
+      xattr -dr com.apple.quarantine /Applications/Sweep.app
+
+    Or open System Settings > Privacy & Security and click "Open Anyway"
+    after the first blocked launch.
   CAVEATS
 
   zap trash: [
