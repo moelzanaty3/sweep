@@ -107,9 +107,12 @@ final class AppState: ObservableObject {
 
     private var timer: Timer?
     private var didLoad = false
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
-    init() {
+    /// The store is injectable so tests can exercise persistence and the
+    /// allowlist migration without touching the user's real preferences.
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         // object(forKey:) + ?? distinguishes "never set" from "set to false"; bool(forKey:)
         // collapses both to false and would silently reset every default on launch.
         let store = defaults
