@@ -45,13 +45,55 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-echo "==> Signing (ad-hoc)"
-codesign --force --deep --sign - "$APP_DIR" 2>/dev/null || echo "   ad-hoc signing skipped"
+if [[ -n "${DEVELOPER_ID:-}" ]]; then
+    echo "==> Signing with $DEVELOPER_ID"
+    # Hardened runtime is a precondition for notarization. It does not restrict
+    # Process spawning, so the du/find/rm/git shell-outs keep working.
+    codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" "$APP_DIR"
+else
+    echo "==> Signing (ad-hoc — set DEVELOPER_ID to sign for distribution)"
+    codesign --force --sign - "$APP_DIR" 2>/dev/null || echo "   ad-hoc signing skipped"
+fi
 
 echo "==> Built $APP_DIR"
 
-if [[ "${1:-}" == "install" ]]; then
+case "${1:-}" in
+install)
     rm -rf "/Applications/$APP_NAME.app"
     cp -R "$APP_DIR" /Applications/
     echo "==> Installed to /Applications/$APP_NAME.app"
-fi
+    ;;
+notarize)
+    : "${DEVELOPER_ID:?set DEVELOPER_ID to your \"Developer ID Application: NAME (TEAMID)\" identity}"
+    : "${NOTARY_PROFILE:=sweep}"
+
+    ZIP="$ROOT/dist/$APP_NAME-$VERSION.zip"
+    DMG="$ROOT/dist/$APP_NAME-$VERSION.dmg"
+
+    echo "==> Submitting to Apple notary service"
+    rm -f "$ZIP"
+    ditto -c -k --keepParent "$APP_DIR" "$ZIP"
+    xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+
+    echo "==> Stapling ticket"
+    xcrun stapler staple "$APP_DIR"
+
+    echo "==> Building DMG"
+    rm -f "$DMG"
+    STAGE="$ROOT/.build/dmg"
+    rm -rf "$STAGE" && mkdir -p "$STAGE"
+    cp -R "$APP_DIR" "$STAGE/"
+    ln -s /Applications "$STAGE/Applications"
+    hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+
+    # The DMG is a separate artifact and needs its own signature, ticket and staple,
+    # or Gatekeeper flags the download even though the app inside is notarized.
+    codesign --force --sign "$DEVELOPER_ID" --timestamp "$DMG"
+    xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$DMG"
+
+    echo "==> Verifying"
+    spctl -a -vvv -t install "$APP_DIR"
+    shasum -a 256 "$DMG"
+    ;;
+esac
