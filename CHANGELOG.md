@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.3](https://github.com/moelzanaty3/sweep/compare/v1.0.2...v1.0.3) (2026-08-21)
+
+
+### Build & packaging
+
+* coverage gate with per-function floors and a ratchet ([57c8fee](https://github.com/moelzanaty3/sweep/commit/57c8fee4b85aaeb09d6c6a041407b505b2a8878c))
+* let release-please use a PAT so its PRs run CI ([f6dd539](https://github.com/moelzanaty3/sweep/commit/f6dd539854aa008a654c5fbcb5cf2e34ad6e3d4c))
+* let release-please use a PAT so its PRs run CI ([3f6608e](https://github.com/moelzanaty3/sweep/commit/3f6608efbd254f52423dafe88cc50a2fe9444567))
+
 ## [1.0.2](https://github.com/moelzanaty3/sweep/compare/v1.0.1...v1.0.2) (2026-08-21)
 
 
