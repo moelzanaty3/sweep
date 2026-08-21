@@ -6,7 +6,9 @@ Every package manager, build tool and container runtime keeps a cache. None of t
 
 Requires macOS 14+.
 
-![Sweep overview](docs/overview.png)
+![Sweep scanning, then cleaning](docs/sweep-walkthrough.gif)
+
+*Project names and paths are pixellated in the Project Build Artifacts section; the app shows them in full.*
 
 ## Install
 
@@ -68,6 +70,42 @@ If bypassing Gatekeeper for an app that deletes files makes you uncomfortable �
 
 This whole section disappears once the app is notarized.
 
+## Updating
+
+```
+brew update && brew upgrade --cask sweep
+xattr -dr com.apple.quarantine /Applications/Sweep.app
+```
+
+The `xattr` line is needed again after every upgrade. Homebrew downloads a fresh DMG each time, and a fresh download is quarantined again. It goes away for good once the app is notarized.
+
+Built from source instead? `git pull && bash build.sh install`.
+
+To check what you are actually running:
+
+```
+defaults read /Applications/Sweep.app/Contents/Info.plist CFBundleShortVersionString
+```
+
+### Uninstalling — and one trap worth knowing
+
+```
+brew uninstall --cask sweep
+```
+
+**Do not drag `Sweep.app` to the Trash if you installed it with Homebrew.** Homebrew keeps its own record of the install, and the next upgrade goes looking for an app it believes is still in place:
+
+```
+Error: moelzanaty3/tap/sweep: It seems the App source '/Applications/Sweep.app' is not there.
+```
+
+Clear the stale record, then install again:
+
+```
+brew uninstall --cask --force sweep
+brew install --cask sweep
+```
+
 ## What it scans
 
 | Category | What it finds |
@@ -109,7 +147,7 @@ Beyond that:
 
 - **Move to Trash is the default.** Permanent deletion is opt-in, per session, in Settings.
 - **Nothing is selected without you.** Scanning never deletes. Selection is explicit, and one control clears it.
-- **Whitelist** any project path so it never appears in results.
+- **Allowlist** any project path so it never appears in results.
 - **Photos and Music libraries are never touched.** They are excluded from the default roots and from traversal — both because those libraries must never be cleaned piecemeal, and because merely measuring them trips a macOS privacy prompt.
 
 Read [`Sources/MacCleaner/Core/Cleaner.swift`](Sources/MacCleaner/Core/Cleaner.swift) before you trust it. That is the point of shipping the source.
@@ -125,6 +163,10 @@ Read [`Sources/MacCleaner/Core/Cleaner.swift`](Sources/MacCleaner/Core/Cleaner.s
 
 ## Screenshots
 
+**Overview** — the reclaimable total, split by what deleting it costs, and the one action that acts on it.
+
+![Overview](docs/overview.png)
+
 **Developer Caches** — every entry names what it is, when it was last touched, and what tier it sits in. The **?** on each row explains what recreates it.
 
 ![Developer Caches](docs/developer-caches.png)
@@ -133,7 +175,7 @@ Read [`Sources/MacCleaner/Core/Cleaner.swift`](Sources/MacCleaner/Core/Cleaner.s
 
 ![Project Build Artifacts](docs/project-artifacts.png)
 
-**Settings** — appearance, menu bar, launch at login, background scan cadence, whitelist and thresholds.
+**Settings** — appearance, menu bar, launch at login, background scan cadence, allowlist and thresholds.
 
 ![Settings](docs/settings.png)
 
