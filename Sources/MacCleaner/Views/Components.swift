@@ -275,7 +275,6 @@ struct PathChip: View {
     }
 }
 
-
 /// The product's differentiator: never assert that something is safe without saying why.
 struct WhyPopover: View {
     let item: CleanItem

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - run: swift --version
+
+      - name: Build (debug, warnings are failures)
+        run: swift build -Xswiftc -warnings-as-errors
+
+      - name: Assemble the app bundle
+        run: bash build.sh
+
+      # The scanners are the part that can silently rot, and they only touch
+      # paths under the runner's own home directory. --scan never deletes.
+      - name: Smoke test the scanners
+        run: ./dist/Sweep.app/Contents/MacOS/Sweep --scan
+
+      - name: Verify the bundle
+        run: |
+          set -euo pipefail
+          plist=dist/Sweep.app/Contents/Info.plist
+          version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist")
+          brand=$(grep -oE 'static let version = "[^"]+"' Sources/MacCleaner/Model/Brand.swift | cut -d'"' -f2)
+          echo "bundle=$version brand=$brand"
+          # These drift the moment someone bumps one by hand instead of letting
+          # release-please rewrite both.
+          [ "$version" = "$brand" ] || { echo "version mismatch"; exit 1; }
+          test -f dist/Sweep.app/Contents/Resources/AppIcon.icns
+
+  lint:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Lint
+        run: swiftlint lint --strict --reporter github-actions-logging
+
+      - name: Shellcheck build.sh
+        run: |
+          brew install shellcheck
+          shellcheck build.sh
