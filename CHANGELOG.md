@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/moelzanaty3/sweep/compare/v1.0.1...v1.0.2) (2026-08-21)
+
+
+### Build & packaging
+
+* add CI ([706b543](https://github.com/moelzanaty3/sweep/commit/706b543a221bacfbb8541f5258dfff0771d7f4f3))
+* pin actions to commit SHAs and bound every job ([3887612](https://github.com/moelzanaty3/sweep/commit/3887612fbc2eded1c4082b4b3e788f556139faa7))
+
 ## [1.0.1](https://github.com/moelzanaty3/sweep/compare/v1.0.0...v1.0.1) (2026-08-21)
 
 
