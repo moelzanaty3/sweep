@@ -1,8 +1,8 @@
-# Kept deliberately small. The codebase has its own conventions - documented in
-# CONTRIBUTING.md - and a linter that argues with them costs more than it saves.
-# Every rule switched off below is a deliberate convention, not a backlog item.
+# Only rules that genuinely fight this codebase's conventions are off; everything
+# else is fixed in the source rather than silenced here.
 included:
   - Sources
+  - Tests
 
 disabled_rules:
   - todo
@@ -10,26 +10,9 @@ disabled_rules:
   - opening_brace
   - multiple_closures_with_trailing_closure
 
-  # `whitelist` is the user-facing name of a feature - it appears in Settings
-  # and in stored preference keys - so the code matches what the UI says.
-  # Renaming is a product decision, not a lint fix.
-  - inclusive_language
-
-  # String(decoding:as:) is the non-failing modern form and is what this
-  # codebase uses for shell output that is always UTF-8.
-  - optional_data_string_conversion
-
-  # Colour and stroke tables are 4- and 5-tuples on purpose; naming a struct
-  # for each would be worse at the call site.
-  - large_tuple
-
-  # `var duplicateSet: String? = nil` reads consistently next to the other
-  # defaulted fields in the same struct.
-  - implicit_optional_initialization
-
 line_length:
-  warning: 180
-  error: 220
+  warning: 140
+  error: 180
   ignores_comments: true
   ignores_urls: true
 
@@ -53,7 +36,7 @@ cyclomatic_complexity:
 
 identifier_name:
   min_length: 1
-  excluded: [id, x, y, w, h, up]
+  excluded: [id, x, y, w, h, up, s]
 
 nesting:
   type_level: 3

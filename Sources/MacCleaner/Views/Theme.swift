@@ -1,21 +1,30 @@
 import SwiftUI
 
+private struct Channels {
+    let red: Double
+    let green: Double
+    let blue: Double
+    var alpha: Double = 1
+
+    var nsColor: NSColor { NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha) }
+}
+
 /// Dynamic colours resolved by the system appearance, so one token set drives light and dark.
-private func dynamic(light: (Double, Double, Double, Double), dark: (Double, Double, Double, Double)) -> Color {
+private func dynamic(light: Channels, dark: Channels) -> Color {
     Color(nsColor: NSColor(name: nil) { appearance in
         let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        let c = isDark ? dark : light
-        return NSColor(srgbRed: c.0, green: c.1, blue: c.2, alpha: c.3)
+        return (isDark ? dark : light).nsColor
     })
 }
 
-private func hex(_ value: UInt32) -> (Double, Double, Double, Double) {
-    (Double((value >> 16) & 0xFF) / 255, Double((value >> 8) & 0xFF) / 255, Double(value & 0xFF) / 255, 1)
+private func hex(_ value: UInt32) -> Channels {
+    Channels(red: Double((value >> 16) & 0xFF) / 255,
+             green: Double((value >> 8) & 0xFF) / 255,
+             blue: Double(value & 0xFF) / 255)
 }
 
 private func solid(_ value: UInt32) -> Color {
-    let c = hex(value)
-    return Color(nsColor: NSColor(srgbRed: c.0, green: c.1, blue: c.2, alpha: 1))
+    Color(nsColor: hex(value).nsColor)
 }
 
 /// Palette follows Vercel's system: true black canvas, near-black surfaces, hairline borders,
@@ -286,7 +295,7 @@ struct SegmentedTabs<Value: Hashable>: View {
     struct Option: Identifiable {
         let value: Value
         let label: String
-        var icon: String? = nil
+        var icon: String?
         var id: Value { value }
     }
 

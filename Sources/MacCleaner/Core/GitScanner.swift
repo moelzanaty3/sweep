@@ -53,7 +53,8 @@ enum GitScanner {
             bytes: reclaimable,
             action: .gitGarbageCollect,
             modified: Shell.modifiedDate(ofPath: gitDir),
-            rationale: "Runs `git gc --prune=now`, which packs loose objects and drops unreachable ones. Reachable history, branches and tags are untouched."
+            rationale: "Runs `git gc --prune=now`, which packs loose objects and drops unreachable ones. "
+                + "Reachable history, branches and tags are untouched."
         )
     }
 }

@@ -7,7 +7,7 @@ struct PathSpec: Sendable {
     let risk: Risk
     let category: Category
     let relativePaths: [String]
-    var action: ToolAction? = nil
+    var action: ToolAction?
 
     var absolutePaths: [String] {
         relativePaths.map { $0.hasPrefix("/") ? $0 : NSHomeDirectory() + "/" + $0 }
@@ -151,11 +151,27 @@ enum Catalog {
         Set((devCaches + appJunk).flatMap(\.absolutePaths))
     }
 
-    static let toolActions: [(id: String, title: String, detail: String, risk: Risk, action: ToolAction)] = [
-        ("docker", "Docker images & containers", "Unused images, stopped containers, networks", .safe, .dockerPrune),
-        ("dockerbuild", "Docker build cache", "Layer cache from past builds", .safe, .dockerBuilderPrune),
-        ("brew", "Homebrew stale downloads", "Old versions and cached bottles", .safe, .brewCleanup),
-        ("simulators", "Unavailable simulators", "Simulator devices whose runtime is gone", .safe, .simctlDeleteUnavailable)
+    struct ToolSpec {
+        let id: String
+        let title: String
+        let detail: String
+        let risk: Risk
+        let action: ToolAction
+    }
+
+    static let toolActions: [ToolSpec] = [
+        ToolSpec(id: "docker", title: "Docker images & containers",
+                 detail: "Unused images, stopped containers, networks",
+                 risk: .safe, action: .dockerPrune),
+        ToolSpec(id: "dockerbuild", title: "Docker build cache",
+                 detail: "Layer cache from past builds",
+                 risk: .safe, action: .dockerBuilderPrune),
+        ToolSpec(id: "brew", title: "Homebrew stale downloads",
+                 detail: "Old versions and cached bottles",
+                 risk: .safe, action: .brewCleanup),
+        ToolSpec(id: "simulators", title: "Unavailable simulators",
+                 detail: "Simulator devices whose runtime is gone",
+                 risk: .safe, action: .simctlDeleteUnavailable)
     ]
 
     /// Media libraries are opaque packages — listing their internals as deletable files would
@@ -253,7 +269,8 @@ extension Catalog {
         "dockerbuild": "Layer cache from past builds. The next build of each image will be slower.",
         "brew": "Old versions of installed formulae. Current versions keep working.",
         "simulators": "Simulator devices whose runtime is no longer installed — they cannot be booted anyway.",
-        "dockerraw": "Docker's disk image. Pruning frees space inside it, but the file itself only shrinks when you reduce the disk image size in Docker Desktop."
+        "dockerraw": "Docker's disk image. Pruning frees space inside it, but the file itself only shrinks "
+            + "when you reduce the disk image size in Docker Desktop."
     ]
 
     static func rationale(for id: String, risk: Risk) -> String {

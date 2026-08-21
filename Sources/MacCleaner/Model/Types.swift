@@ -88,7 +88,7 @@ struct CleanItem: Identifiable, Sendable, Hashable {
     var modified: Date?
     /// The concrete reason this is safe to remove — what recreates it, and at what cost.
     var rationale: String = ""
-    var duplicateSet: String? = nil
+    var duplicateSet: String?
     var isPreferredCopy: Bool = false
     var isInformational: Bool = false
 

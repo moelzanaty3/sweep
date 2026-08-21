@@ -138,11 +138,16 @@ struct SweepMark: View {
     var size: CGFloat = 32
     var bordered = true
 
-    /// (x1, y1, x2, y2, opacity), all as fractions of the tile.
-    static let strokes: [(CGFloat, CGFloat, CGFloat, CGFloat, CGFloat)] = [
-        (0.22, 0.76, 0.48, 0.24, 1.00),
-        (0.47, 0.76, 0.67, 0.36, 0.66),
-        (0.69, 0.76, 0.83, 0.48, 0.42)
+    /// One slash of the mark, in fractions of the tile.
+    struct Stroke {
+        let x1: CGFloat, y1: CGFloat, x2: CGFloat, y2: CGFloat
+        let opacity: CGFloat
+    }
+
+    static let strokes: [Stroke] = [
+        Stroke(x1: 0.22, y1: 0.76, x2: 0.48, y2: 0.24, opacity: 1.00),
+        Stroke(x1: 0.47, y1: 0.76, x2: 0.67, y2: 0.36, opacity: 0.66),
+        Stroke(x1: 0.69, y1: 0.76, x2: 0.83, y2: 0.48, opacity: 0.42)
     ]
 
     var body: some View {
@@ -158,12 +163,12 @@ struct SweepMark: View {
             .overlay {
                 Canvas { context, canvasSize in
                     let s = canvasSize.width
-                    for (x1, y1, x2, y2, opacity) in Self.strokes {
+                    for slash in Self.strokes {
                         var stroke = Path()
-                        stroke.move(to: CGPoint(x: s * x1, y: s * y1))
-                        stroke.addLine(to: CGPoint(x: s * x2, y: s * y2))
+                        stroke.move(to: CGPoint(x: s * slash.x1, y: s * slash.y1))
+                        stroke.addLine(to: CGPoint(x: s * slash.x2, y: s * slash.y2))
                         context.stroke(stroke,
-                                       with: .color(Theme.markForeground.opacity(opacity)),
+                                       with: .color(Theme.markForeground.opacity(slash.opacity)),
                                        style: StrokeStyle(lineWidth: s * 0.085, lineCap: .round))
                     }
                 }

@@ -38,10 +38,10 @@ enum Shell {
         }
         if process.isRunning {
             process.terminate()
-            return ShellResult(status: 124, out: String(decoding: data, as: UTF8.self))
+            return ShellResult(status: 124, out: String(bytes: data, encoding: .utf8) ?? "")
         }
         process.waitUntilExit()
-        return ShellResult(status: process.terminationStatus, out: String(decoding: data, as: UTF8.self))
+        return ShellResult(status: process.terminationStatus, out: String(bytes: data, encoding: .utf8) ?? "")
     }
 
     /// GUI apps inherit a bare PATH, so tools installed by Homebrew or a version manager
