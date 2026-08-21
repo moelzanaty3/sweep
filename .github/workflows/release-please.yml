@@ -25,6 +25,10 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # A PAT rather than GITHUB_TOKEN: GitHub will not run workflows on a
+          # pull request the default token opened, so CI never reports and the
+          # required checks on main can never be satisfied.
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
