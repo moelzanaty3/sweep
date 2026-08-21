@@ -6,6 +6,8 @@ Every package manager, build tool and container runtime keeps a cache. None of t
 
 Requires macOS 14+.
 
+![Sweep overview](docs/overview.png)
+
 ## Install
 
 Build from source. Sweep is a developer tool and you have the toolchain:
@@ -74,6 +76,20 @@ Read [`Sources/MacCleaner/Core/Cleaner.swift`](Sources/MacCleaner/Core/Cleaner.s
 - **Light / Dark / System** appearance
 - **Accessibility text sizing** — honours System Settings › Accessibility › Display › Text size
 - **Collapsible sidebar** (`⌘\`)
+
+## Screenshots
+
+**Developer Caches** — every entry names what it is, when it was last touched, and what tier it sits in. The **?** on each row explains what recreates it.
+
+![Developer Caches](docs/developer-caches.png)
+
+**Project Build Artifacts** — walks the roots you choose for `node_modules`, build output and virtualenvs. Project names are pixellated here; the app shows them in full.
+
+![Project Build Artifacts](docs/project-artifacts.png)
+
+**Settings** — appearance, menu bar, launch at login, background scan cadence, whitelist and thresholds.
+
+![Settings](docs/settings.png)
 
 ## CLI
 
