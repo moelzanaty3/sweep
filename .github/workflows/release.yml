@@ -19,8 +19,9 @@ permissions:
 jobs:
   build:
     runs-on: macos-15
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag || github.event.release.tag_name || github.ref }}
 
@@ -80,7 +81,7 @@ jobs:
           TAG: ${{ inputs.tag || github.event.release.tag_name }}
         run: gh release upload "$TAG" dist/*.dmg dist/checksums.txt --clobber
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Sweep-dmg
           path: dist/*.dmg
@@ -92,6 +93,7 @@ jobs:
     needs: build
     if: inputs.tag != '' || github.event_name == 'release'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Update the tap
         env:
@@ -103,6 +105,10 @@ jobs:
           if [ -z "$TAP_TOKEN" ]; then
             echo "TAP_TOKEN not set - skipping cask update."
             exit 0
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Refusing to act on an unexpected tag: $TAG" >&2
+            exit 1
           fi
           VERSION="${TAG#v}"
           URL="https://github.com/$REPO/releases/download/$TAG/Sweep-$VERSION.dmg"
