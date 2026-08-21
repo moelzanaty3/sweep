@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_NAME="Sweep"
 BUNDLE_ID="com.elzanaty.sweep"
-VERSION="1.0.2" # x-release-please-version
+VERSION="1.0.3" # x-release-please-version
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$ROOT/.build/release"
 APP_DIR="$ROOT/dist/$APP_NAME.app"
