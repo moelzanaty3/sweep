@@ -1,33 +1,39 @@
-name: Release
+name: Build Release Artifacts
 
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
 
-      - name: Show toolchain
-        run: swift --version
+      - run: swift --version
 
-      - name: Build
+      - name: Build app
         run: bash build.sh
 
-      # Everything below is skipped until the signing secrets exist, so the
-      # workflow still produces an unsigned build while enrollment is pending.
+      # Signing is skipped until the secrets exist, so this workflow still
+      # produces a build while Developer Program enrollment is pending.
       - name: Import signing certificate
-        if: env.CERT_P12 != ''
+        id: signing
         env:
           CERT_P12: ${{ secrets.CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
         run: |
+          if [ -z "$CERT_P12" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "No signing certificate configured — producing an ad-hoc build."
+            exit 0
+          fi
           KEYCHAIN=$RUNNER_TEMP/build.keychain
           security create-keychain -p actions "$KEYCHAIN"
           security set-keychain-settings -lut 21600 "$KEYCHAIN"
@@ -38,11 +44,11 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k actions "$KEYCHAIN"
           security list-keychain -d user -s "$KEYCHAIN" login.keychain
           rm -f "$RUNNER_TEMP/cert.p12"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Sign and notarize
-        if: env.CERT_P12 != ''
+      - name: Sign, notarize and package
+        if: steps.signing.outputs.signed == 'true'
         env:
-          CERT_P12: ${{ secrets.CERT_P12 }}
           DEVELOPER_ID: ${{ secrets.DEVELOPER_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
@@ -52,9 +58,20 @@ jobs:
             --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APP_PASSWORD"
           bash build.sh notarize
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
+      - name: Package unsigned
+        if: steps.signing.outputs.signed != 'true'
+        run: bash build.sh dmg
+
+      - name: Checksum
+        run: shasum -a 256 dist/*.dmg | tee dist/checksums.txt
+
+      - name: Attach artifacts to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.dmg dist/checksums.txt --clobber
+
+      - uses: actions/upload-artifact@v4
         with:
-          files: |
-            dist/*.dmg
-          generate_release_notes: true
+          name: Sweep-dmg
+          path: dist/*.dmg

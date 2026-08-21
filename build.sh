@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_NAME="Sweep"
 BUNDLE_ID="com.elzanaty.sweep"
-VERSION="1.0.0"
+VERSION="1.0.0" # x-release-please-version
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$ROOT/.build/release"
 APP_DIR="$ROOT/dist/$APP_NAME.app"
@@ -57,34 +57,41 @@ fi
 
 echo "==> Built $APP_DIR"
 
-case "${1:-}" in
-install)
-    rm -rf "/Applications/$APP_NAME.app"
-    cp -R "$APP_DIR" /Applications/
-    echo "==> Installed to /Applications/$APP_NAME.app"
-    ;;
-notarize)
-    : "${DEVELOPER_ID:?set DEVELOPER_ID to your \"Developer ID Application: NAME (TEAMID)\" identity}"
-    : "${NOTARY_PROFILE:=sweep}"
-
-    ZIP="$ROOT/dist/$APP_NAME-$VERSION.zip"
+make_dmg() {
     DMG="$ROOT/dist/$APP_NAME-$VERSION.dmg"
-
-    echo "==> Submitting to Apple notary service"
-    rm -f "$ZIP"
-    ditto -c -k --keepParent "$APP_DIR" "$ZIP"
-    xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
-
-    echo "==> Stapling ticket"
-    xcrun stapler staple "$APP_DIR"
-
     echo "==> Building DMG"
     rm -f "$DMG"
     STAGE="$ROOT/.build/dmg"
     rm -rf "$STAGE" && mkdir -p "$STAGE"
     cp -R "$APP_DIR" "$STAGE/"
     ln -s /Applications "$STAGE/Applications"
-    hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+    hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+    echo "==> Built $DMG"
+}
+
+case "${1:-}" in
+install)
+    rm -rf "/Applications/$APP_NAME.app"
+    cp -R "$APP_DIR" /Applications/
+    echo "==> Installed to /Applications/$APP_NAME.app"
+    ;;
+dmg)
+    make_dmg
+    shasum -a 256 "$DMG"
+    ;;
+notarize)
+    : "${DEVELOPER_ID:?set DEVELOPER_ID to your \"Developer ID Application: NAME (TEAMID)\" identity}"
+    : "${NOTARY_PROFILE:=sweep}"
+
+    ZIP="$ROOT/dist/$APP_NAME-$VERSION.zip"
+
+    echo "==> Submitting app to Apple notary service"
+    rm -f "$ZIP"
+    ditto -c -k --keepParent "$APP_DIR" "$ZIP"
+    xcrun notarytool submit "$ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun stapler staple "$APP_DIR"
+
+    make_dmg
 
     # The DMG is a separate artifact and needs its own signature, ticket and staple,
     # or Gatekeeper flags the download even though the app inside is notarized.
