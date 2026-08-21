@@ -66,6 +66,25 @@ final class CleanerDisposalTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: allowed))
     }
 
+    /// Trashing needs write permission on the parent directory. When it is
+    /// denied the failure has to be reported, not swallowed as success.
+    func testTrashFailureIsReportedWithTheUnderlyingReason() async throws {
+        let locked = "\(root)/locked"
+        try FileManager.default.createDirectory(atPath: locked, withIntermediateDirectories: true)
+        let victim = "\(locked)/cache/file.bin"
+        try FileManager.default.createDirectory(atPath: "\(locked)/cache", withIntermediateDirectories: true)
+        try TempHome.write("payload", to: victim)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: locked)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: locked) }
+
+        let outcome = await Cleaner.clean(item(paths: ["\(locked)/cache"]), disposal: .trash)
+
+        XCTAssertFalse(outcome.succeeded)
+        XCTAssertFalse(outcome.message.isEmpty)
+        XCTAssertTrue(outcome.message.contains("~/"), "the reason should name the path: \(outcome.message)")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: victim), "the file must survive a failed trash")
+    }
+
     func testMissingPathIsNotAFailure() async throws {
         let outcome = await Cleaner.clean(item(paths: ["\(root)/never-existed"]), disposal: .delete)
 

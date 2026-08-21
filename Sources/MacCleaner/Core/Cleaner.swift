@@ -10,6 +10,15 @@ struct CleanOutcome: Sendable {
 }
 
 enum Cleaner {
+    /// Seam for tests. The tool actions shell out to docker, brew, go and git;
+    /// running those for real would mutate the machine the suite is running on,
+    /// so tests install a stub and assert on how its result is interpreted.
+    nonisolated(unsafe) static var runner: ((String, [String], TimeInterval) -> ShellResult)?
+
+    private static func execute(_ path: String, _ args: [String], _ timeout: TimeInterval) -> ShellResult {
+        if let runner { return runner(path, args, timeout) }
+        return Shell.run(path, args, timeout: timeout)
+    }
     enum Disposal: String, CaseIterable, Identifiable {
         case trash = "Move to Trash"
         case delete = "Delete immediately"
@@ -34,25 +43,23 @@ enum Cleaner {
         let result: ShellResult
         switch action {
         case .dockerPrune:
-            result = Shell.run("/usr/bin/env", ["docker", "system", "prune", "-af"], timeout: 600)
+            result = execute("/usr/bin/env", ["docker", "system", "prune", "-af"], 600)
         case .dockerBuilderPrune:
-            result = Shell.run("/usr/bin/env", ["docker", "builder", "prune", "-af"], timeout: 600)
+            result = execute("/usr/bin/env", ["docker", "builder", "prune", "-af"], 600)
         case .brewCleanup:
-            result = Shell.run("/usr/bin/env", ["brew", "cleanup", "-s"], timeout: 600)
+            result = execute("/usr/bin/env", ["brew", "cleanup", "-s"], 600)
         case .simctlDeleteUnavailable:
-            result = Shell.run("/usr/bin/xcrun", ["simctl", "delete", "unavailable"], timeout: 600)
+            result = execute("/usr/bin/xcrun", ["simctl", "delete", "unavailable"], 600)
         case .pnpmStorePrune:
-            result = Shell.run("/usr/bin/env", ["pnpm", "store", "prune"], timeout: 600)
+            result = execute("/usr/bin/env", ["pnpm", "store", "prune"], 600)
         case .goCleanModcache:
-            result = Shell.run("/usr/bin/env", ["go", "clean", "-modcache"], timeout: 600)
+            result = execute("/usr/bin/env", ["go", "clean", "-modcache"], 600)
         case .gitGarbageCollect:
             guard let repo = item.paths.first else {
                 return CleanOutcome(itemID: item.id, title: item.title, freed: 0,
                                     message: "no repository path", succeeded: false)
             }
-            result = Shell.run("/usr/bin/env",
-                               ["git", "-C", repo, "gc", "--prune=now", "--quiet"],
-                               timeout: 900)
+            result = execute("/usr/bin/env", ["git", "-C", repo, "gc", "--prune=now", "--quiet"], 900)
         }
 
         guard result.ok else {
@@ -86,7 +93,7 @@ enum Cleaner {
                     failures.append(shortError(error, path: path))
                 }
             case .delete:
-                let result = Shell.run("/bin/rm", ["-rf", path], timeout: 900)
+                let result = execute("/bin/rm", ["-rf", path], 900)
                 if result.ok {
                     freed += before
                 } else {

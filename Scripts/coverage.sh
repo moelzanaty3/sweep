@@ -32,8 +32,14 @@ if [[ ! -f "$PROFDATA" || ! -f "$BINARY" ]]; then
     exit 1
 fi
 
+# SystemServices.swift is the boundary onto AppKit, ServiceManagement and the
+# notification centre: every line of it opens a panel, registers a real login
+# item or posts a real notification. It holds no logic of its own, so it is
+# excluded here rather than pretended about. Keep it that way - if a decision
+# ever creeps into that file, it belongs on this side of the line instead.
 report() {
-    xcrun llvm-cov report "$BINARY" -instr-profile "$PROFDATA" -ignore-filename-regex='Tests/' "$@"
+    xcrun llvm-cov report "$BINARY" -instr-profile "$PROFDATA" \
+        -ignore-filename-regex='Tests/|SystemServices.swift' "$@"
 }
 
 failures=0
@@ -72,14 +78,17 @@ check "Cleaner.isRemovable" "$(percent_for_function Sources/MacCleaner/Core/Clea
 
 echo
 echo "==> Logic files"
-# Floors sit just under what the suite reaches today, so they catch a
-# regression rather than describing an ambition. Raise them when you raise the
-# coverage - never lower them to make a red build go green.
-check "Core/Cleaner.swift" "$(percent_for_file Sources/MacCleaner/Core/Cleaner.swift)" 55
-check "Core/DuplicateScanner.swift" "$(percent_for_file Sources/MacCleaner/Core/DuplicateScanner.swift)" 90
-check "Model/Catalog.swift" "$(percent_for_file Sources/MacCleaner/Model/Catalog.swift)" 80
-check "Model/Types.swift" "$(percent_for_file Sources/MacCleaner/Model/Types.swift)" 70
-check "Model/AppState.swift" "$(percent_for_file Sources/MacCleaner/Model/AppState.swift)" 20
+# The logic layer is held at 100%. These files decide what gets deleted, so
+# "mostly covered" is not a meaningful standard for them. Never lower a floor
+# to make a red build go green - add the test instead.
+check "Core/Cleaner.swift" "$(percent_for_file Sources/MacCleaner/Core/Cleaner.swift)" 100
+check "Core/DuplicateScanner.swift" "$(percent_for_file Sources/MacCleaner/Core/DuplicateScanner.swift)" 100
+check "Model/Catalog.swift" "$(percent_for_file Sources/MacCleaner/Model/Catalog.swift)" 100
+check "Model/Types.swift" "$(percent_for_file Sources/MacCleaner/Model/Types.swift)" 100
+# 99 rather than 100: llvm-cov's report counts three missed lines in this file
+# that llvm-cov show cannot point at - the two tools disagree, and there is no
+# source line left to write a test against. Every function here is exercised.
+check "Model/AppState.swift" "$(percent_for_file Sources/MacCleaner/Model/AppState.swift)" 99
 
 echo
 echo "==> Global ratchet"

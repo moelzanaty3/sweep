@@ -66,8 +66,12 @@ There is no single global percentage to hit. Most of this codebase is SwiftUI vi
 | Check | Rule |
 |---|---|
 | `Cleaner.isRemovable` | **100% line coverage**, always |
-| Logic files (`Cleaner`, `DuplicateScanner`, `Catalog`, `Types`, `AppState`) | per-file floors, listed in the script |
+| `Cleaner`, `DuplicateScanner`, `Catalog`, `Types` | **100%** |
+| `AppState` | **99%** — see the note in the script |
+| View layer | not gated |
 | Everything else | a **ratchet** — the total may never fall below `Scripts/coverage-baseline.txt` |
+
+Anything that reaches outside the process — the folder picker, login items, Finder, notifications — lives in `Core/SystemServices.swift` and is swapped out in tests through `AppState.System`. That file is excluded from the gate because every line of it opens a panel or registers something real. **Keep it free of decisions**; if logic creeps in there, it belongs on the tested side of the line.
 
 The ratchet is why you do not need to write tests for `Theme.swift` to land a one-line fix. It only asks that you do not make things worse.
 

@@ -25,9 +25,6 @@ jobs:
       - name: Build (debug, warnings are failures)
         run: swift build -Xswiftc -warnings-as-errors
 
-      - name: Test and enforce the coverage gate
-        run: bash Scripts/coverage.sh
-
       - name: Assemble the app bundle
         run: bash build.sh
 
@@ -47,6 +44,24 @@ jobs:
           # release-please rewrite both.
           [ "$version" = "$brand" ] || { echo "version mismatch"; exit 1; }
           test -f dist/Sweep.app/Contents/Resources/AppIcon.icns
+
+  coverage:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Tests and coverage gate
+        run: bash Scripts/coverage.sh | tee coverage.log
+
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            printf '### Coverage\n\n```\n'
+            sed -n '/Safety-critical/,$p' coverage.log || true
+            printf '```\n'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
     runs-on: macos-15
