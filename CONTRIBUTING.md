@@ -52,6 +52,16 @@ Verify with `swift run MacCleaner --scan` before opening the PR, and put the rel
 - Blocking work on the main thread. Scans shell out to `du` and `find`; they belong in a background context.
 - Reaching into `~/Pictures`, `~/Movies`, or any `com.apple.*` cache domain. Those trip macOS privacy prompts on mere traversal, and media libraries must never be cleaned piecemeal. This is deliberate — see the comments in `Catalog.defaultFileRoots` and `DiskScanner.scanLooseCaches()`.
 
+## Tests
+
+```
+swift test
+```
+
+`Tests/MacCleanerTests/CleanerSafetyTests.swift` pins every clause of `isRemovable()`. If a change makes one of those fail, the change is wrong until proven otherwise — do not edit the test to match new behaviour without saying why in the pull request.
+
+`CatalogTests` enforces the rules above mechanically: unique ids, populated specs, relative paths only, and a real rationale on every entry.
+
 ## Style
 
 Match the file you are editing. The codebase has a specific convention about comments: they explain **why**, never **what**. If a comment restates the code, it gets removed in review. If a non-obvious decision has no comment, that is the gap worth filling.

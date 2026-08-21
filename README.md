@@ -126,11 +126,12 @@ The same binary runs headless — useful for checking a machine over SSH, or for
 
 ```
 swift build                # debug
+swift test                 # 25 tests
 bash build.sh              # release .app into dist/
 bash build.sh install      # release .app into /Applications
 ```
 
-Swift 6 toolchain, SwiftPM, no dependencies.
+Swift 6 toolchain, SwiftPM, no dependencies. Every push runs the build, the tests, SwiftLint in strict mode and shellcheck.
 
 ## Author
 
