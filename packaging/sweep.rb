@@ -2,14 +2,14 @@
 # moelzanaty3/homebrew-tap repository when cutting a release.
 cask "sweep" do
   version "1.0.0"
-  sha256 "411bd336526bb1a47e5395885f5c35257b194f920a4a80765ade304b2591baf4"
+  sha256 "d48526a36dba3aef36b9c3f91e9608330a2749d93d01e314ce74dad6831be78c"
 
   url "https://github.com/moelzanaty3/sweep/releases/download/v#{version}/Sweep-#{version}.dmg"
   name "Sweep"
   desc "Disk hygiene for developers"
   homepage "https://github.com/moelzanaty3/sweep"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Sweep.app"
 

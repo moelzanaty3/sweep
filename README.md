@@ -14,10 +14,14 @@ Requires macOS 14+.
 
 ```
 brew tap moelzanaty3/tap
+brew trust moelzanaty3/tap
 brew install --cask --no-quarantine sweep
 ```
 
-`--no-quarantine` is needed because Sweep is not notarized by Apple yet — without it macOS refuses to open the app. It becomes a plain `brew install --cask sweep` once notarized.
+Two of those lines need explaining:
+
+- **`brew trust`** — Homebrew refuses to load casks from third-party taps until you say you trust the tap. This is Homebrew's check, and it applies to every tap outside `homebrew/cask`.
+- **`--no-quarantine`** — Sweep is not notarized by Apple yet, so without it macOS refuses to open the app. It becomes a plain `brew install --cask sweep` once notarized.
 
 ### From source
 
