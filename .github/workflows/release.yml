@@ -1,6 +1,14 @@
 name: Build Release Artifacts
 
 on:
+  # Called by release-please.yml. A release created with the default
+  # GITHUB_TOKEN cannot trigger another workflow, so the chain is explicit
+  # rather than event-driven.
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: false
   release:
     types: [published]
   workflow_dispatch:
@@ -14,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || github.ref }}
+          ref: ${{ inputs.tag || github.event.release.tag_name || github.ref }}
 
       - run: swift --version
 
@@ -66,10 +74,11 @@ jobs:
         run: shasum -a 256 dist/*.dmg | tee dist/checksums.txt
 
       - name: Attach artifacts to the release
-        if: github.event_name == 'release'
+        if: inputs.tag != '' || github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.dmg dist/checksums.txt --clobber
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: gh release upload "$TAG" dist/*.dmg dist/checksums.txt --clobber
 
       - uses: actions/upload-artifact@v4
         with:
