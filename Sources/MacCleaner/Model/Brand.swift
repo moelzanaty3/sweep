@@ -3,7 +3,7 @@ import Foundation
 enum Brand {
     static let name = "Sweep"
     static let tagline = "disk hygiene for developers"
-    static let version = "1.0.0" // x-release-please-version
+    static let version = "1.0.1" // x-release-please-version
 
     static let authorName = "Mohamed El-Zanaty"
     static let authorRole = "Engineering Manager & Software Engineer"
