@@ -40,7 +40,33 @@ That builds a release binary, generates the icon, assembles `Sweep.app` and copi
 
 ### Direct download
 
-Grab the `.dmg` from [Releases](https://github.com/moelzanaty3/sweep/releases) — checksums are attached to every one. Right-click the app and choose **Open** the first time, for the same notarization reason.
+Grab the `.dmg` from [Releases](https://github.com/moelzanaty3/sweep/releases) — a `checksums.txt` is attached to every one.
+
+> **macOS will refuse to open it the first time.** Sweep is not yet notarized by Apple, so Gatekeeper checks the download, finds no notarization ticket, and shows:
+>
+> *"Apple could not verify Sweep is free of malware that may harm your Mac or compromise your privacy."*
+>
+> Nothing is wrong with the download — the app simply has not been through Apple's notary service yet.
+
+Two ways past it, after dragging `Sweep.app` into `/Applications`:
+
+**Clear the quarantine attribute** — one command, works every time:
+
+```
+xattr -dr com.apple.quarantine /Applications/Sweep.app
+```
+
+**Or approve it in System Settings** — double-click the app, let the warning appear, then open **System Settings › Privacy & Security**, scroll to Security, and click **Open Anyway** next to the message about Sweep.
+
+Verify the download first if you like:
+
+```
+shasum -a 256 ~/Downloads/Sweep-*.dmg   # compare against checksums.txt on the release
+```
+
+If bypassing Gatekeeper for an app that deletes files makes you uncomfortable — a reasonable instinct — **build from source instead**. A locally built app carries no quarantine attribute, so none of this applies, and you get to read exactly what you are running.
+
+This whole section disappears once the app is notarized.
 
 ## What it scans
 
@@ -126,12 +152,13 @@ The same binary runs headless — useful for checking a machine over SSH, or for
 
 ```
 swift build                # debug
-swift test                 # 25 tests
+swift test                 # unit tests
+bash Scripts/coverage.sh   # tests + coverage gate
 bash build.sh              # release .app into dist/
 bash build.sh install      # release .app into /Applications
 ```
 
-Swift 6 toolchain, SwiftPM, no dependencies. Every push runs the build, the tests, SwiftLint in strict mode and shellcheck.
+Swift 6 toolchain, SwiftPM, no dependencies. Every push runs the build, the tests, a coverage gate, SwiftLint in strict mode and shellcheck.
 
 ## Author
 

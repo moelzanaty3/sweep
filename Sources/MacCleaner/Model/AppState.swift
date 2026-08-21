@@ -105,11 +105,15 @@ final class AppState: ObservableObject {
         }
     }
 
-    private var timer: Timer?
+    /// Internal so the suite can fire it directly; nothing else touches it.
+    var timer: Timer?
     private var didLoad = false
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
-    init() {
+    /// The store is injectable so tests can exercise persistence and the
+    /// allowlist migration without touching the user's real preferences.
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         // object(forKey:) + ?? distinguishes "never set" from "set to false"; bool(forKey:)
         // collapses both to false and would silently reset every default on launch.
         let store = defaults
@@ -344,20 +348,16 @@ final class AppState: ObservableObject {
     /// SMAppService owns the truth here — it survives reinstalls and the user can revoke it from
     /// System Settings, so the toggle reads the live status rather than a stored copy.
     var launchAtLogin: Bool {
-        SMAppService.mainApp.status == .enabled
+        System.loginItemStatus() == .enabled
     }
 
     var launchAtLoginRequiresApproval: Bool {
-        SMAppService.mainApp.status == .requiresApproval
+        System.loginItemStatus() == .requiresApproval
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {
         do {
-            if enabled {
-                try SMAppService.mainApp.register()
-            } else {
-                try SMAppService.mainApp.unregister()
-            }
+            try System.setLoginItem(enabled)
             loginItemError = nil
             log(enabled ? "Enabled open at login" : "Disabled open at login")
         } catch {
@@ -368,7 +368,7 @@ final class AppState: ObservableObject {
     }
 
     func openLoginItemsSettings() {
-        SMAppService.openSystemSettingsLoginItems()
+        System.openLoginItemsSettings()
     }
 
     // MARK: - Background schedule
@@ -388,7 +388,7 @@ final class AppState: ObservableObject {
         log("Background scan scheduled: \(scanInterval.label.lowercased())")
     }
 
-    private func runBackgroundScan() {
+    func runBackgroundScan() {
         guard !isScanning, !cleaning else { return }
         let before = reclaimableTotal
         log("Background scan started")
@@ -397,28 +397,24 @@ final class AppState: ObservableObject {
         Task {
             while isScanning { try? await Task.sleep(nanoseconds: 500_000_000) }
             guard notifyOnBackgroundScan, reclaimableTotal > before else { return }
-            notify(title: "DevSweep found \(formatBytes(reclaimableTotal)) to reclaim",
+            notify(title: "\(Brand.name) found \(formatBytes(reclaimableTotal)) to reclaim",
                    body: "\(allItems.count) items across \(scannedCategories.count) categories.")
         }
     }
 
     func requestNotificationAccess() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        System.requestNotificationAccess()
     }
 
     private func notify(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        System.deliverNotification(title, body)
     }
 
     // MARK: - Misc
 
     func reveal(_ item: CleanItem) {
         guard let path = item.paths.first else { return }
-        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+        System.revealInFinder(path)
     }
 
     func addRoot(toProjects: Bool) {
@@ -439,13 +435,7 @@ final class AppState: ObservableObject {
     }
 
     private func pickFolders() -> [String]? {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = true
-        panel.prompt = "Add"
-        guard panel.runModal() == .OK else { return nil }
-        return panel.urls.map(\.path)
+        System.pickFolders()
     }
 
     func log(_ line: String) {

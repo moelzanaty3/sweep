@@ -27,7 +27,7 @@ swift run MacCleaner --scan --all  # adds projects, git, large files, duplicates
 
 **This app deletes files.** `Cleaner.isRemovable()` is the last check before removal. It refuses paths outside the home directory, paths containing `..`, paths shallower than two components unless the catalog named them, and the keychain, preferences, SSH, GPG and iCloud trees.
 
-If you change that function, the protected list, or `Catalog.explicitCachePaths`, **say so explicitly in your summary**. Do not let a widened deletion surface be something the reviewer has to find in the diff. `Tests/MacCleanerTests/CleanerSafetyTests.swift` pins every clause; if you make one of those tests fail, stop and explain rather than editing the test.
+If you change that function, the protected list, or `Catalog.explicitCachePaths`, **say so explicitly in your summary**. Do not let a widened deletion surface be something the reviewer has to find in the diff. `Tests/MacCleanerTests/CleanerSafetyTests.swift` pins every clause; if you make one of those tests fail, stop and explain rather than editing the test. `Cleaner.isRemovable` is held at **100% line coverage** by `Scripts/coverage.sh` and there is no acceptable reason for that to drop. The whole logic layer is at 100% — adding an untested branch to `Cleaner`, `Catalog`, `Types`, `DuplicateScanner` or `AppState` fails CI. Calls that reach outside the process belong in `Core/SystemServices.swift`, behind the `AppState.System` seam.
 
 ## Conventions that reviewers enforce
 
