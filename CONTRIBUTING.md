@@ -52,13 +52,28 @@ Verify with `swift run MacCleaner --scan` before opening the PR, and put the rel
 - Blocking work on the main thread. Scans shell out to `du` and `find`; they belong in a background context.
 - Reaching into `~/Pictures`, `~/Movies`, or any `com.apple.*` cache domain. Those trip macOS privacy prompts on mere traversal, and media libraries must never be cleaned piecemeal. This is deliberate — see the comments in `Catalog.defaultFileRoots` and `DiskScanner.scanLooseCaches()`.
 
-## Tests
+## Tests and coverage
 
 ```
-swift test
+swift test                 # just the tests
+bash Scripts/coverage.sh   # tests plus the gate CI enforces
 ```
 
-`Tests/MacCleanerTests/CleanerSafetyTests.swift` pins every clause of `isRemovable()`. If a change makes one of those fail, the change is wrong until proven otherwise — do not edit the test to match new behaviour without saying why in the pull request.
+**Run the coverage script before opening a pull request.** CI runs the same thing, and a red gate is the first thing a reviewer sees.
+
+There is no single global percentage to hit. Most of this codebase is SwiftUI view code, and a 90-something target would only produce tests that execute views without asserting anything about them. Instead the gate has three parts:
+
+| Check | Rule |
+|---|---|
+| `Cleaner.isRemovable` | **100% line coverage**, always |
+| Logic files (`Cleaner`, `DuplicateScanner`, `Catalog`, `Types`, `AppState`) | per-file floors, listed in the script |
+| Everything else | a **ratchet** — the total may never fall below `Scripts/coverage-baseline.txt` |
+
+The ratchet is why you do not need to write tests for `Theme.swift` to land a one-line fix. It only asks that you do not make things worse.
+
+Raise a floor when you raise the coverage. Never lower one to turn a red build green — if a drop is genuinely correct, say why in the pull request and change the baseline in the same commit so it shows up in review.
+
+`Tests/MacCleanerTests/CleanerSafetyTests.swift` pins every clause of `isRemovable()`, and the gate holds that function at 100%. If a change makes one of those fail, the change is wrong until proven otherwise — do not edit the test to match new behaviour without saying why in the pull request.
 
 `CatalogTests` enforces the rules above mechanically: unique ids, populated specs, relative paths only, and a real rationale on every entry.
 
