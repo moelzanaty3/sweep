@@ -1,8 +1,8 @@
 # Canonical source for the Homebrew cask. Copy to Casks/sweep.rb in the
 # moelzanaty3/homebrew-tap repository when cutting a release.
 cask "sweep" do
-  version "1.0.1"
-  sha256 "b1856e2bcfc9595d99b07b1b4d19234498fac2a3d878dcdb36309d91a8d54fa8"
+  version "1.0.2"
+  sha256 "0d3c345f47ea242079b220c7dcb87691ebae77b9bfd207fbea8966367e9651dd"
 
   url "https://github.com/moelzanaty3/sweep/releases/download/v#{version}/Sweep-#{version}.dmg"
   name "Sweep"
