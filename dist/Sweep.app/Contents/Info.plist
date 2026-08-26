@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key><string>Sweep</string>
+    <key>CFBundleDisplayName</key><string>Sweep</string>
+    <key>CFBundleExecutable</key><string>Sweep</string>
+    <key>CFBundleIdentifier</key><string>com.elzanaty.sweep</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>1.0.1</string>
+    <key>CFBundleVersion</key><string>1.0.1</string>
+    <key>LSMinimumSystemVersion</key><string>14.0</string>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>NSSupportsAutomaticTermination</key><false/>
+    <key>NSDesktopFolderUsageDescription</key><string>Sweep scans your Desktop for build artifacts and large files.</string>
+    <key>NSDocumentsFolderUsageDescription</key><string>Sweep scans Documents for build artifacts and large files.</string>
+    <key>NSDownloadsFolderUsageDescription</key><string>Sweep scans Downloads for stale installers and large files.</string>
+</dict>
+</plist>
