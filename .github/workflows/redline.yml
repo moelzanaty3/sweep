@@ -1,0 +1,35 @@
+# Managed by Redline; regenerate with `redline init` rather than editing here.
+# Redline caller. Installed into every onboarded repo as .github/workflows/redline.yml
+# by `redline init`. Kept in sync by workflows/redline-sync.yml once `redline sync`
+# ships in Phase 3 — see CHANGELOG.md.
+#
+# DO NOT RENAME THE JOB. The branch ruleset requires the check "redline-gate / gate",
+# which is derived from this job id plus the aggregate job id in the reusable workflow.
+# Renaming it makes the required check unreportable and blocks every PR in this repo.
+#
+# Replace moelzanaty3 with the organisation that hosts the `.github` repo.
+name: Redline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: redline-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  redline-gate:
+    uses: moelzanaty3/.github/.github/workflows/redline-gate.yml@main
+    with:
+      adr-diff-threshold: 300
+      fail-on-dependency-severity: high
+      soft-fail-labels: redline-exempt,redline-sync
+      # Written by `redline init --rung`. observe and warn report without blocking;
+      # block-blocker and block-high stop a merge. The security floor — dependency
+      # review and the secret scan — is not on this ladder and blocks at every rung.
+      rung: observe

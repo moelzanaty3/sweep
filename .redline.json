@@ -1,0 +1,31 @@
+{
+  "standardsVersion": "0.0.3",
+  "cliVersion": "0.0.0-development",
+  "host": "github",
+  "profile": "mobile-ios",
+  "vendors": [
+    "claude",
+    "agents"
+  ],
+  "menu": {
+    "blockingGate": false,
+    "adrForLargeDiffs": true,
+    "accessibility": true,
+    "speckit": false,
+    "sensitivePathReviewers": true
+  },
+  "capabilities": {
+    "gate": true,
+    "mergePolicy": true,
+    "labels": true
+  },
+  "pendingAdmin": [],
+  "onboardedAt": "2026-09-07T11:13:15.045Z",
+  "lastRunAt": "2026-09-07T11:13:15.047Z",
+  "localRules": false,
+  "commandFiles": {
+    ".claude/commands/redline-init.md": "sha256:0ac029377c855c60616b513dcd6ad88a194687a06dd84cfce146255f31921f02",
+    ".claude/commands/redline-verify.md": "sha256:5efffdb4617359c55d7cc4b07f4a21b8ee67dc6c0542dabb3a7182ecf34bc948"
+  },
+  "rung": "observe"
+}
