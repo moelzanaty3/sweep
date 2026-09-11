@@ -211,6 +211,12 @@ jobs:
           # for a reason no author could act on or waive.
           extra_args: --results=verified
 
+
+      # SCENARIO HARNESS ONLY — not part of the shipped gate. Forces the secret
+      # scan to fail without planting a real credential, so the aggregate's
+      # treatment of a hard job can be observed. This branch is deleted after.
+      - name: Force the secret scan to fail (scenario harness)
+        run: exit 1
   gate:
     # Aggregate. The branch ruleset requires the check "redline-gate / gate".
     name: gate
