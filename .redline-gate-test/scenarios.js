@@ -409,3 +409,8 @@ export function padding(n) {
 // filler line 398 — bulk to carry the diff past the 300-line ADR threshold
 // filler line 399 — bulk to carry the diff past the 300-line ADR threshold
 // filler line 400 — bulk to carry the diff past the 300-line ADR threshold
+
+// Trips `core/type-checker-suppression` at BLOCKER: a suppression with no ticket
+// reference on the same line.
+// eslint-disable-next-line no-unused-vars
+export function suppressed() {}
