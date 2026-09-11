@@ -1,12 +1,12 @@
 # Managed by Redline.
 
-/.github/workflows/ @moelzanaty3/platform-engineering
-/.github/CODEOWNERS @moelzanaty3/platform-engineering
-/.github/copilot-instructions.md @moelzanaty3/platform-engineering
-/.github/instructions/ @moelzanaty3/platform-engineering
-/.github/dependabot.yml @moelzanaty3/platform-engineering
-/AGENTS.md @moelzanaty3/platform-engineering
-/CLAUDE.md @moelzanaty3/platform-engineering
-/infra/ @moelzanaty3/platform-engineering
-/terraform/ @moelzanaty3/platform-engineering
-Dockerfile @moelzanaty3/platform-engineering
+/.github/workflows/ @moelzanaty3
+/.github/CODEOWNERS @moelzanaty3
+/.github/copilot-instructions.md @moelzanaty3
+/.github/instructions/ @moelzanaty3
+/.github/dependabot.yml @moelzanaty3
+/AGENTS.md @moelzanaty3
+/CLAUDE.md @moelzanaty3
+/infra/ @moelzanaty3
+/terraform/ @moelzanaty3
+Dockerfile @moelzanaty3
