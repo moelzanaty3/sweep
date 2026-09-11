@@ -1,0 +1,12 @@
+# Managed by Redline.
+
+/.github/workflows/ @moelzanaty3
+/.github/CODEOWNERS @moelzanaty3
+/.github/copilot-instructions.md @moelzanaty3
+/.github/instructions/ @moelzanaty3
+/.github/dependabot.yml @moelzanaty3
+/AGENTS.md @moelzanaty3
+/CLAUDE.md @moelzanaty3
+/infra/ @moelzanaty3
+/terraform/ @moelzanaty3
+Dockerfile @moelzanaty3

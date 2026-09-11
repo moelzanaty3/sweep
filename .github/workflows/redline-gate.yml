@@ -1,0 +1,342 @@
+# Managed by Redline. Regenerate with `redline init --repair`; edits here are overwritten.
+#
+# A vendored copy of the Redline gate, written by redlinegate 0.0.3.
+#
+# This workflow runs from the pull request's own head commit, so a pull request
+# that edits this file changes the gate that is judging it — including standing
+# down the dependency and secret jobs, which no label can waive. Protect
+# .github/workflows/ with CODEOWNERS, or host the gate in the organisation
+# .github repository instead (`redline init --gate-source org`).
+
+# Reusable readiness gate. Host in the org `.github` repo at
+# .github/workflows/redline-gate.yml; repos call it from .github/workflows/redline.yml
+# (see templates/redline.yml).
+#
+# IMPORTANT — required-status-check naming. A reusable workflow reports its check runs
+# as "<caller job id> / <called job id>". templates/redline.yml names the caller job
+# `redline-gate`, and the aggregate job below is `gate`, so the context a branch ruleset
+# must require is exactly:
+#
+#     redline-gate / gate
+#
+# Changing either job id changes the required context and will silently block every PR
+# in every onboarded repo. `npx redlinegate verify` checks the
+# real name after onboarding.
+name: Redline Gate
+
+on:
+  workflow_call:
+    inputs:
+      adr-diff-threshold:
+        description: Changed lines above which an ADR link (or the no-adr label) is required
+        type: number
+        default: 300
+      fail-on-dependency-severity:
+        description: Minimum dependency-review severity that fails the gate
+        type: string
+        default: high
+      soft-fail-labels:
+        description: >-
+          Comma-separated labels that downgrade the process checks (checklist, ADR) to
+          warnings. Security checks are never downgraded.
+        type: string
+        default: redline-exempt,redline-sync
+      rung:
+        description: >-
+          The enforcement rung this repository sits at: observe, warn, block-blocker or
+          block-high. `observe` and `warn` report and never block; the block-* rungs stop a
+          merge on a finding at or above their severity. Written by `redline init --rung`,
+          which refuses a promotion the repository's recorded evidence does not support.
+        type: string
+        default: observe
+      stand-down:
+        description: >-
+          Comma-separated gate jobs another tool in the calling repository already covers:
+          `policy`, `dependencies`, `secrets`. A stood-down job is skipped and the
+          aggregate below reads a skip as a pass. Written by `redline init` from the tools
+          the repository DECLARED, never from detection alone — `dependencies` and
+          `secrets` are the two jobs no label can waive, so a wrong guess here is the one
+          that removes a security check nobody asked to remove. Empty runs every job.
+        type: string
+        default: ''
+      exemption-enforcement:
+        description: >-
+          What a soft-fail label without a valid "## Redline exemption" block does.
+          `warn` accepts it and says what is missing; `require` refuses it. Repos move
+          from warn to require one standards version after the block was introduced, so
+          nobody's open pull request is failed by a rule that did not exist when they
+          opened it.
+        type: string
+        default: warn
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  checklist:
+    name: PR checklist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify the launch-readiness checklist is complete
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          body=$(gh pr view "$PR" --repo "$REPO" --json body --jq '.body // ""')
+
+          # Only the Launch readiness section is enforced. "Change type" is a pick-one
+          # list, so requiring every box there would make the gate unpassable.
+          section=$(printf '%s\n' "$body" | awk '
+            /^##[[:space:]]+Launch readiness/ { inside = 1; next }
+            /^##[[:space:]]/                  { inside = 0 }
+            inside                            { print }
+          ')
+
+          if [[ -z "${section//[[:space:]]/}" ]]; then
+            echo "::error::No '## Launch readiness' section in the PR description. Restore .github/pull_request_template.md and complete the checklist."
+            exit 1
+          fi
+
+          unchecked=$(printf '%s\n' "$section" | grep -c '^[[:space:]]*- \[ \]' || true)
+          if [[ "$unchecked" -gt 0 ]]; then
+            printf '%s\n' "$section" | grep '^[[:space:]]*- \[ \]' || true
+            echo "::error::$unchecked unchecked launch-readiness item(s). Tick each one, or delete the line and say why in the PR description."
+            exit 1
+          fi
+          echo "Launch readiness complete."
+
+  adr:
+    name: ADR required for significant changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check diff size against ADR link
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          THRESHOLD: ${{ inputs.adr-diff-threshold }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr view "$PR" --repo "$REPO" --json additions,deletions,body,labels)
+          changed=$(jq '.additions + .deletions' <<<"$pr")
+          has_adr=$(jq -r '.body // ""' <<<"$pr" | grep -c 'docs/adr/' || true)
+          exempt=$(jq -r '.labels[].name' <<<"$pr" | grep -cx 'no-adr' || true)
+          echo "changed=$changed threshold=$THRESHOLD adr-links=$has_adr no-adr-label=$exempt"
+          if [[ "$changed" -gt "$THRESHOLD" && "$has_adr" -eq 0 && "$exempt" -eq 0 ]]; then
+            echo "::error::${changed} changed lines with no ADR link. Add docs/adr/NNNN-*.md and link it in the PR body, or apply the 'no-adr' label with a justification comment."
+            exit 1
+          fi
+
+  policy:
+    if: ${{ !contains(format(',{0},', inputs.stand-down), ',policy,') }}
+    # The deterministic tier: the rules a checker can decide, evaluated with no
+    # model call. They cost nothing to run and they cannot hallucinate, which is
+    # the point — an author cannot argue with a model about whether the word TODO
+    # appears on a line.
+    #
+    # Soft-fail, like the other process checks. The never-exemptible set is
+    # exactly dependency-review and secrets and this does not join it: these are
+    # code-standard findings, not a security boundary.
+    name: Deterministic policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Evaluate the deterministic rules
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          RUNG: ${{ inputs.rung }}
+          REDLINE_CLI_VERSION: '0.0.3'
+        run: |
+          set -euo pipefail
+          # Three dots: the diff against the merge base, not against the tip of
+          # the base branch. Two dots would attribute every commit that landed on
+          # main since this branch started to this pull request's author.
+          git diff "${BASE}...${HEAD}" > /tmp/redline.diff
+          # The rung decides the floor. Without passing it, block-high behaved
+          # exactly like block-blocker — the strictest rung on the ladder did
+          # nothing the one below it did not already do.
+          case "$RUNG" in
+            block-high) fail_on=HIGH ;;
+            *) fail_on=BLOCKER ;;
+          esac
+          npx --yes "redlinegate@${REDLINE_CLI_VERSION}" policy \
+            --diff-file /tmp/redline.diff --fail-on "$fail_on"
+
+  dependency-review:
+    if: ${{ !contains(format(',{0},', inputs.stand-down), ',dependencies,') }}
+    name: Dependency review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: ${{ inputs.fail-on-dependency-severity }}
+          comment-summary-in-pr: on-failure
+
+  secrets:
+    if: ${{ !contains(format(',{0},', inputs.stand-down), ',secrets,') }}
+    name: Secret scan (diff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan the PR range
+        # Pinned to the commit behind tag v3.97.1 (2026-08-24). This action runs with
+        # access to the PR diff, so the ref must be immutable — a tag can be moved.
+        # GitHub Actions does not allow expressions in a step `uses:`, so the pin is
+        # reviewed here, in the org `.github` repo, which is the right place for it.
+        # scripts/check-pins.mjs re-resolves it against the upstream tag in CI.
+        uses: trufflesecurity/trufflehog@20652fbbdefffcdaa493a5bf57ab2ac6b1db715b # v3.97.1
+        with:
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          # verified only: `unknown` produces false positives, and this is a blocking
+          # check. Unverified candidates are caught by GHAS secret scanning instead.
+          #
+          # No `--fail` here. The action's own entrypoint already passes it before
+          # appending extra_args, and trufflehog rejects a repeated flag outright —
+          # `flag 'fail' cannot be repeated` — so the scan never ran at all. This
+          # job is outside the enforcement ladder and outside label exemption, so
+          # that failure blocked every pull request in every onboarded repository
+          # for a reason no author could act on or waive.
+          extra_args: --results=verified
+
+  gate:
+    # Aggregate. The branch ruleset requires the check "redline-gate / gate".
+    name: gate
+    needs: [checklist, adr, policy, dependency-review, secrets]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          SOFT_FAIL_LABELS: ${{ inputs.soft-fail-labels }}
+          EXEMPTION_ENFORCEMENT: ${{ inputs.exemption-enforcement }}
+          RUNG: ${{ inputs.rung }}
+          # Through the environment, never interpolated into the script body:
+          # `${{ github.event.pull_request.body }}` inline is a script injection
+          # anyone who can open a pull request can use.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          # Pinned, not @latest: the gate's behaviour must not change under a
+          # repository because a release happened overnight.
+          REDLINE_CLI_VERSION: '0.0.3'
+        run: |
+          set -euo pipefail
+
+          # Security checks can never be downgraded by a label.
+          HARD_JOBS='["dependency-review","secrets"]'
+
+          # `skipped` is a pass. None of these jobs has `needs`, so the only thing
+          # that skips one is its own stand-down guard above — a deliberate
+          # instruction from the calling repository, not a job that fell over.
+          # Without this the aggregate failed every repository that narrowed the
+          # gate, which is the opposite of what narrowing it asks for.
+          PASSED='["success","skipped"]'
+
+          # `.value.result as $r` first: inside `$passed | index(...)` the input
+          # is $passed, so referring to `.value.result` there indexes the array
+          # with a string and jq exits 5 — which `set -e` turns into a gate that
+          # fails every pull request.
+          hard_failed=$(jq -r --argjson hard "$HARD_JOBS" --argjson passed "$PASSED" \
+            'to_entries[] | .value.result as $r | select($passed | index($r) | not) | select(.key as $k | $hard | index($k)) | .key' <<<"$RESULTS")
+          soft_failed=$(jq -r --argjson hard "$HARD_JOBS" --argjson passed "$PASSED" \
+            'to_entries[] | .value.result as $r | select($passed | index($r) | not) | select(.key as $k | $hard | index($k) | not) | .key' <<<"$RESULTS")
+
+          labelled=false
+          for label in ${SOFT_FAIL_LABELS//,/ }; do
+            if jq -e --arg l "$label" 'index($l)' <<<"$LABELS" >/dev/null; then
+              labelled=true
+              echo "Soft-fail label present: $label"
+            fi
+          done
+
+          # A label alone records nothing: not who accepted the failing check, not
+          # why, not until when. The pull request must also carry a
+          # "## Redline exemption" block with a reason and an expiry, and the CLI
+          # is what reads it — re-implementing that parse here would eventually
+          # disagree with the audit that reads the same block later.
+          #
+          # The body is written to a file rather than passed as an argument: a
+          # pull request body is attacker-controlled text full of backticks and
+          # $(...), and interpolating it into a command is how one becomes a
+          # command.
+          exempt=false
+          if [[ "$labelled" == true ]]; then
+            printf '%s' "$PR_BODY" > /tmp/redline-pr-body.md
+            # Every failing soft check must be covered, one at a time. Calling
+            # exempt without --scope never evaluated the scope at all, so an
+            # exemption written for `checklist` silently waived `adr` and the
+            # deterministic `policy` job too — the field was recorded and ignored.
+            exempt=true
+            for check in $soft_failed; do
+              if ! npx --yes "redlinegate@${REDLINE_CLI_VERSION}" exempt \
+                   --body-file /tmp/redline-pr-body.md --scope "$check"; then
+                exempt=false
+                break
+              fi
+            done
+            if [[ "$exempt" == true ]]; then
+              :
+            elif [[ "$EXEMPTION_ENFORCEMENT" != "require" ]]; then
+              echo "::warning::This exemption has no valid \`## Redline exemption\` block. It is being accepted this time; once this repository moves to require, it will not be."
+              exempt=true
+            else
+              echo "::error::A soft-fail label was applied without a valid \`## Redline exemption\` block (reason and expiry required)."
+            fi
+          fi
+
+          {
+            echo "### Redline gate"
+            echo
+            jq -r 'to_entries[] | "- \(.key): \(.value.result)"' <<<"$RESULTS"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # The security floor is not on the ladder. Dependency review and the
+          # secret scan block at every rung including observe: the ladder governs
+          # how strictly a repository's own standards are enforced, not whether
+          # the organisation's security minimum applies to it.
+          if [[ -n "$hard_failed" ]]; then
+            echo "::error::Redline gate failed on security checks (not label-exemptible, and not on the enforcement ladder): $hard_failed"
+            exit 1
+          fi
+
+          # Below block-blocker the process checks report and do not block. The
+          # findings are still produced, still commented, and still collected —
+          # observe is not "off", it is "measured and not yet enforced", which is
+          # the whole point of having a rung below blocking at all.
+          # A rung this gate does not recognise is NOT enforcing. cli/config
+          # reads an unrecognised value back as `observe` for the same reason: a
+          # typo must never be able to make a repository stricter than anyone
+          # chose, and the two halves disagreeing meant a typo blocked every pull
+          # request here while the CLI reported the repository as observing.
+          case "$RUNG" in
+            block-blocker|block-high) enforcing=true ;;
+            *) enforcing=false ;;
+          esac
+
+          if [[ -n "$soft_failed" ]]; then
+            if [[ "$enforcing" != true ]]; then
+              echo "::warning::Process checks failed: $soft_failed. This repository is at rung '$RUNG', which reports and does not block. The findings are recorded either way."
+              echo "- **not enforced (rung: $RUNG):** $soft_failed" >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$exempt" == true ]]; then
+              echo "::warning::Process checks failed but a valid exemption is recorded: $soft_failed. A reviewer is accepting this deliberately, with a reason and an expiry."
+              echo "- **exempted:** $soft_failed" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error::Redline gate failed: $soft_failed"
+              exit 1
+            fi
+          fi
+
+          echo "Redline gate passed."

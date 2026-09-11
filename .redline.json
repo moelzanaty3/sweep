@@ -1,0 +1,57 @@
+{
+  "//": [
+    "Written by `redline init`. Edit with the command, not by hand — the next run rewrites this file.",
+    "menu.blockingGate — the gate blocks a merge rather than reporting. `redline init --blocking`.",
+    "menu.adrForLargeDiffs — a diff over the threshold needs an ADR link in the pull request body.",
+    "menu.accessibility — recorded for a later phase; nothing reads it yet.",
+    "menu.speckit — renders the spec-driven development context into the standards artifacts.",
+    "menu.tmf — renders the TM Forum context. `redline init --tmf` / `--no-tmf`.",
+    "menu.sensitivePathReviewers — writes CODEOWNERS and requires code-owner review on those paths.",
+    "capabilities.* — false means \"this repository has its own\"; Redline does not install or report it.",
+    "rung — how hard the gate bites: observe, warn, block-blocker, block-high. Promotion needs evidence.",
+    "pendingAdmin — capabilities an administrator still has to grant. Not a failure, a to-do list.",
+    "gateSource — org: the gate lives in the organisation .github repo. local: vendored into this",
+    "  repository, which means a pull request can edit the gate judging it. `--gate-source`.",
+    "gateVersion — the redlinegate version the vendored gate was written by. Empty when not vendored.",
+    "commandFiles, standardsVersion, cliVersion, onboardedAt, lastRunAt — Redline's own bookkeeping."
+  ],
+  "standardsVersion": "0.0.3",
+  "cliVersion": "0.0.3",
+  "host": "github",
+  "profile": "mobile-ios",
+  "vendors": [
+    "claude",
+    "agents"
+  ],
+  "menu": {
+    "blockingGate": false,
+    "adrForLargeDiffs": true,
+    "accessibility": true,
+    "speckit": false,
+    "tmf": false,
+    "sensitivePathReviewers": true
+  },
+  "capabilities": {
+    "gate": true,
+    "mergePolicy": true,
+    "labels": true
+  },
+  "integrations": [],
+  "pendingAdmin": [
+    "secret-scanning",
+    "push-protection",
+    "dependency-alerts",
+    "merge-policy",
+    "repo-property"
+  ],
+  "onboardedAt": "2026-09-11T20:37:58.142Z",
+  "lastRunAt": "2026-09-11T20:37:58.142Z",
+  "localRules": false,
+  "commandFiles": {
+    ".claude/commands/redline-init.md": "sha256:0ac029377c855c60616b513dcd6ad88a194687a06dd84cfce146255f31921f02",
+    ".claude/commands/redline-verify.md": "sha256:5efffdb4617359c55d7cc4b07f4a21b8ee67dc6c0542dabb3a7182ecf34bc948"
+  },
+  "rung": "observe",
+  "gateSource": "local",
+  "gateVersion": "0.0.3"
+}
